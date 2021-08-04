@@ -1,19 +1,21 @@
 
 package app;
 import app.UserProfile;
-
-import org.junit.Test;
+import javax.swing.table.DefaultTableModel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Assert;
 import static app.DBConnection.InsertRow;
 import static app.Utilities.*;
 import static app.DBConnection.getResult;
 import java.awt.Dimension;
 import javax.swing.*;
 import javax.swing.JButton;
+import javax.swing.JTable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -23,15 +25,20 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.*;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.lang.reflect.InvocationTargetException;
+
 
 /**
  *
@@ -42,8 +49,8 @@ public class UserProfileTest {
    
  // class variables
     String username;
-    int bid;
-
+    DefaultTableModel model;
+    JTable Bookings;
 
     public UserProfileTest() {  }
 
@@ -58,7 +65,7 @@ public class UserProfileTest {
       //  testSubject = null; 
      }
    
-
+   
     // random string generation for username
     private String generateAlphaNumeric(int topMargin) {
         int leftLimit = 48 ; // numeral '0'
@@ -91,7 +98,7 @@ public class UserProfileTest {
    public void CheckBookingsActionPerformedTest (){
 
          System.out.println(" Testing CheckBookingsActionPerforme()");
-         UserProfile frame ;
+         UserProfile frame;
          JButton CheckBookings; 
          int num = 10;
          for (int i = 0; i < num; i++) {
@@ -100,11 +107,14 @@ public class UserProfileTest {
             frame = new UserProfile(username);
             //get access to  button
             CheckBookings = (JButton) TestUtils.getChildNamed(frame, "CheckBookings");
+            Bookings = (JTable)TestUtils.getChildNamed(frame, "Bookings");
+
             assertNotNull("CheckBookings inaccessible", CheckBookings);
             assertNotNull("Frame component inaccessible", frame);
-            
+            assertNotNull("Bookings JTable component inaccessible", Bookings);
+           
             // to see if each UI component is accessible
-            System.out.println("Frame, Button found");
+            System.out.println("Frame,Bookings and CheckBookings Button found");
 
             System.out.print("TEST CASE: " + i + "\n");
             //randomised username 
@@ -122,11 +132,11 @@ public class UserProfileTest {
             try {
                 java.sql.Date inDate, outDate;
                 try {
-                    inDate = dateIn.getDate();
-                    outDate = dateOut.getDate();
+                    //inDate = dateIn.getDate();
+                    //outDate = dateOut.getDate();
                     // testing if new checkIn and checkOut date are not null 
-                    assertNotNull("No Booking Date checkIn", inDate);
-                    assertNotNull("No booking Date checkOut", outDate);
+                    assertNotNull("No Booking Date checkIn", dateIn);
+                    assertNotNull("No booking Date checkOut", dateOut);
                     System.out.print("DATE IN: " + dateIn.getDate() + "\n");
                     System.out.print("DATE OUT: " + dateOut.getDate() + "\n");
                     
@@ -185,6 +195,8 @@ public class UserProfileTest {
             frame = new UserProfile(username);
             //get access to  button
             Cancel = (JButton) TestUtils.getChildNamed(frame, "Cancel");
+            Bookings = (JTable)TestUtils.getChildNamed(frame, "Bookings");
+            
             assertNotNull("Cancel Action Performed inaccessible", Cancel);
             assertNotNull("Frame component inaccessible", frame);
             
@@ -195,21 +207,24 @@ public class UserProfileTest {
             System.out.println("USERNAME: " + username);
             
             // integrating random dates into datepicker 
-            Date dateIn = randDate();
-            Date dateOut = randDate();
+            java.sql.Date dateIn = randDate();
+            java.sql.Date dateOut = randDate();
             frame.setVisible(true);
             // testing if values of username were correct and implemented correctly in frame variable
             assertEquals(username, frame.username);
           
             try{
-                 // Change Status to Cancelled    
-                 model = (DefaultTableModel) Bookings.getModel();
-                int rowIndex = Bookings.getSelectedRow();
+                // Change Status to Cancelled    
+                model = (DefaultTableModel) Bookings.getModel();
+                model.setRowCount(0);
+                Bookings.setRowSelectionInterval(0, 0);
+                int rowIndex = Bookings.getSelectedRow(); 
                 int bookid= (int) model.getValueAt(rowIndex, 0);
+                System.out.println("bookid"+ bookid);
                 int hid=(int) model.getValueAt(rowIndex,6);
-                java.sql.Date datein=(java.sql.Date) model.getValueAt(rowIndex,3);
-                java.sql.Date dateout=(java.sql.Date) model.getValueAt(rowIndex,4);
-               
+                java.sql.Date datein = (java.sql.Date) model.getValueAt(rowIndex,3);
+                java.sql.Date dateout = (java.sql.Date) model.getValueAt(rowIndex,4);
+                               
                  InsertRow("UPDATE booking_info SET Status=2 WHERE Booking_ID=\""+bookid+"\";");
                  ResultSet rs = getResult("SELECT CURDATE()");
                  rs.next();
@@ -217,8 +232,8 @@ public class UserProfileTest {
                  int setFlag = 0;
                  if(getDateDifference(datein, today) < 3){
                      setFlag = 1;  }
-                query = "SELECT * FROM booking_info where Status=1 AND Hotel_ID = " + hid +  " ORDER BY Booking_ID ASC";
-                ResultSet rs2=getResult(query);
+                String query = "SELECT * FROM booking_info where Status=1 AND Hotel_ID = " + hid +  " ORDER BY Booking_ID ASC";
+                ResultSet rs2 = getResult(query);
                 
                 while(rs2.next()){
                     int bid = rs2.getInt("Booking_ID");
@@ -276,6 +291,8 @@ public class UserProfileTest {
             frame = new UserProfile(username);
             //get access to  button
             Modify = (JButton) TestUtils.getChildNamed(frame, "Modify");
+            Bookings = (JTable)TestUtils.getChildNamed(frame, "Bookings");
+
             assertNotNull("Modify Bookings inaccessible", Modify);
             assertNotNull("Frame component inaccessible", frame);
             
@@ -296,9 +313,12 @@ public class UserProfileTest {
             
             // testing the code of button functionality
             try {
+                Bookings.setRowSelectionInterval(0, 0);
                 int rowIndex = Bookings.getSelectedRow();
+                //int rowIndex = Bookings.setRowSelectionInterval(0, 0);
                 model = (DefaultTableModel) Bookings.getModel();
                 int bookingID = (int) model.getValueAt(rowIndex, 0);
+               
                 java.sql.Date datein = (java.sql.Date) model.getValueAt(rowIndex,3);
                 java.sql.Date dateout= (java.sql.Date) model.getValueAt(rowIndex,4);
                 ResultSet rs = getResult("SELECT CURDATE()");
@@ -309,16 +329,18 @@ public class UserProfileTest {
                      return;
                 }         
                 new ModifyBooking(username, bookingID).setVisible(true);
-                this.dispose();
+                // this.dispose();
             } 
-            catch (SQLException ex) {
-            Logger.getLogger(UserProfile.class.getName()).log(Level.SEVERE, null, ex);
+            catch(Exception e){
+            System.out.println(e);
             }
             
             System.out.println("Modify Action Performed Test Successful");
         }        
     }
     
+  
+
     @Test
     public void RatingOptionActionPerformedTest (){
          System.out.println(" Testing RatingOptionActionPerformed()");    
@@ -332,6 +354,9 @@ public class UserProfileTest {
             frame = new UserProfile(username);
             //get access to  button
             RatingOption = (JButton) TestUtils.getChildNamed(frame, "RatingOption");
+            Bookings = (JTable)TestUtils.getChildNamed(frame, "Bookings");
+            JTextField Rating = (JTextField) TestUtils.getChildNamed(frame, "Rating");
+
             assertNotNull("Rating Option inaccessible", RatingOption);
             assertNotNull("Frame component inaccessible", frame);
             
@@ -353,8 +378,12 @@ public class UserProfileTest {
             // testing the code of button functionality
             try {
                  // TODO add your handling code here:
+                Bookings.setRowSelectionInterval(0, 0);
                 int rowIndex = Bookings.getSelectedRow();
+                //int rowIndex = Bookings.setRowSelectionInterval(0, 0);
+               
                 model = (DefaultTableModel) Bookings.getModel();
+                
                 int bookingID = (int) model.getValueAt(rowIndex, 0);
                 int rating = Integer.parseInt(Rating.getText());
                 ResultSet rs = getResult("SELECT Hotel_ID from booking_info WHERE Booking_ID = " + bookingID + ";");            
@@ -368,8 +397,8 @@ public class UserProfileTest {
                 InsertRow(query);
                 
             }   
-            catch (SQLException ex) {
-            Logger.getLogger(UserProfile.class.getName()).log(Level.SEVERE, null, ex);
+            catch(Exception e){
+            System.out.println(e);
             }
             System.out.println("Rating Option Action Performed Test Successful");
         }   
